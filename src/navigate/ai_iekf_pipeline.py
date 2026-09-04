@@ -82,6 +82,23 @@ def lat_lon_to_enu_m(
     return east_m, north_m
 
 
+def enu_to_lat_lon_deg(
+    east_m: float,
+    north_m: float,
+    ref_lat_deg: float,
+    ref_lon_deg: float,
+) -> Tuple[float, float]:
+    """
+    Converts local East-North (m) relative to reference (ref_lat, ref_lon)
+    to WGS84 (lat, lon) in degrees using the spherical Earth approximation.
+    Exact mathematical inverse of lat_lon_to_enu_m.
+    """
+    ref_lat_rad = ref_lat_deg * DEG2RAD
+    lat_deg = ref_lat_deg + (north_m / EARTH_RADIUS_M) * RAD2DEG
+    lon_deg = ref_lon_deg + (east_m / (EARTH_RADIUS_M * math.cos(ref_lat_rad))) * RAD2DEG
+    return lat_deg, lon_deg
+
+
 # ================================================================== #
 #  End-to-End AI + ES-EKF Pipeline
 # ================================================================== #

@@ -1,0 +1,5 @@
+Blackout Duration,Baseline DR (m),Version A [AI+EKF] (m),Version B [Legacy Road] (m),Version C [OSM Road] (m),VC RMSE (m),VC Drift (%),Improvement vs Baseline (%),Improvement vs Version A (%),OSM Match Rate (%),Avg Correction (m)
+5s,37.51,20.04,20.01,11.32,9.59,17.0,+69.8%,+43.5%,100.0%,0.45
+10s,71.67,41.81,41.55,19.4,13.3,17.3,+72.9%,+53.6%,100.0%,0.63
+30s,230.57,158.14,157.73,44.58,32.69,17.7,+80.7%,+71.8%,100.0%,0.72
+60s,575.53,386.71,385.79,134.03,72.77,29.0,+76.7%,+65.3%,100.0%,0.82

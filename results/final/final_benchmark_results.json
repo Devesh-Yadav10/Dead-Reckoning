@@ -1,0 +1,76 @@
+{
+  "metadata": {
+    "project": "NAVIGATE 2.0",
+    "evaluated_durations_s": [
+      5,
+      10,
+      30,
+      60
+    ],
+    "dataset": "IO-VNBD Benchmark (Smoke Corridor Session S-M)",
+    "pipeline_versions": {
+      "Baseline": "Raw IMU Dead Reckoning",
+      "Version A": "AI (VelocityModel V2 + AttitudeModel) + ES-EKF",
+      "Version B": "AI + ES-EKF + Pre-Blackout GNSS Road Cache",
+      "Version C": "AI + ES-EKF + OpenStreetMap Multi-Candidate Road Constraint"
+    }
+  },
+  "durations": {
+    "5s": {
+      "duration_s": 5,
+      "baseline_final_error_m": 37.51,
+      "version_a_final_error_m": 20.04,
+      "version_b_final_error_m": 20.01,
+      "version_c_final_error_m": 11.32,
+      "version_c_rmse_m": 9.59,
+      "version_c_drift_pct": 17.0,
+      "improvement_vs_baseline_pct": 69.8,
+      "improvement_vs_version_a_pct": 43.5,
+      "improvement_vs_version_b_pct": 43.5,
+      "osm_match_rate_pct": 100.0,
+      "osm_avg_correction_m": 0.45
+    },
+    "10s": {
+      "duration_s": 10,
+      "baseline_final_error_m": 71.67,
+      "version_a_final_error_m": 41.81,
+      "version_b_final_error_m": 41.55,
+      "version_c_final_error_m": 19.4,
+      "version_c_rmse_m": 13.3,
+      "version_c_drift_pct": 17.3,
+      "improvement_vs_baseline_pct": 72.9,
+      "improvement_vs_version_a_pct": 53.6,
+      "improvement_vs_version_b_pct": 53.3,
+      "osm_match_rate_pct": 100.0,
+      "osm_avg_correction_m": 0.63
+    },
+    "30s": {
+      "duration_s": 30,
+      "baseline_final_error_m": 230.57,
+      "version_a_final_error_m": 158.14,
+      "version_b_final_error_m": 157.73,
+      "version_c_final_error_m": 44.58,
+      "version_c_rmse_m": 32.69,
+      "version_c_drift_pct": 17.7,
+      "improvement_vs_baseline_pct": 80.7,
+      "improvement_vs_version_a_pct": 71.8,
+      "improvement_vs_version_b_pct": 71.7,
+      "osm_match_rate_pct": 100.0,
+      "osm_avg_correction_m": 0.72
+    },
+    "60s": {
+      "duration_s": 60,
+      "baseline_final_error_m": 575.53,
+      "version_a_final_error_m": 386.71,
+      "version_b_final_error_m": 385.79,
+      "version_c_final_error_m": 134.03,
+      "version_c_rmse_m": 72.77,
+      "version_c_drift_pct": 29.0,
+      "improvement_vs_baseline_pct": 76.7,
+      "improvement_vs_version_a_pct": 65.3,
+      "improvement_vs_version_b_pct": 65.3,
+      "osm_match_rate_pct": 100.0,
+      "osm_avg_correction_m": 0.82
+    }
+  }
+}

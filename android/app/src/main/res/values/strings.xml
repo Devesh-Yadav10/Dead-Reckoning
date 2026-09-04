@@ -1,0 +1,29 @@
+<resources>
+    <string name="app_name">NAVIGATE 2.0</string>
+    <string name="title_live_nav">LIVE NAVIGATION</string>
+    <string name="btn_live">LIVE</string>
+    <string name="btn_replay">REPLAY</string>
+    <string name="gnss_available">GNSS AVAILABLE</string>
+    <string name="gnss_lost">GNSS LOST / BLACKOUT</string>
+    <string name="gnss_reacquired">GNSS REACQUIRED</string>
+    <string name="mode_normal">MODE: NORMAL</string>
+    <string name="mode_blackout">MODE: AI + ES-EKF + OSM</string>
+    <string name="label_speed">SPEED</string>
+    <string name="label_heading">HEADING</string>
+    <string name="label_lat_lon">LAT / LON</string>
+    <string name="label_osm">OSM ROAD</string>
+    <string name="label_latency">LATENCY</string>
+    <string name="btn_simulate_outage">SIMULATE GNSS OUTAGE</string>
+    <string name="btn_restore_gnss">RESTORE GNSS</string>
+    <string name="hint_search_destination">Search destination (e.g. IIT Kharagpur)...</string>
+    <string name="btn_search">SEARCH</string>
+    <string name="status_searching">Searching destination...</string>
+    <string name="status_no_results">No results found.</string>
+    <string name="status_search_error">Unable to search. Check your connection.</string>
+    <string name="label_selected_destination">DESTINATION:</string>
+    <string name="btn_clear">CLEAR</string>
+    <string name="status_routing_calculating">Calculating OSM route...</string>
+    <string name="status_route_ready">OSM ROUTE: READY</string>
+    <string name="status_route_unavailable">OSM route unavailable</string>
+</resources>
+

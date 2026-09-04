@@ -1,0 +1,283 @@
+{
+  "metadata": {
+    "pipeline_version": "Version C: AI + ES-EKF + OSM Road Constraint",
+    "velocity_checkpoint": "models\\velocity_model_v2.pt",
+    "attitude_checkpoint": "models\\attitude_model.pt",
+    "dataset": "data\\processed\\iovnbd_smoke_test.npz",
+    "evaluated_sessions": [
+      "S-M"
+    ],
+    "blackout_durations_s": [
+      5,
+      10,
+      30,
+      60
+    ],
+    "road_config": {
+      "max_match_dist_m": 20.0,
+      "max_heading_diff_deg": 30.0,
+      "correction_strength": 0.5,
+      "road_cov_m2": 5.0,
+      "cache_radius_m": 400.0,
+      "query_radius_m": 500.0,
+      "max_age_s": 3600.0
+    },
+    "runtime_seconds": 95.29
+  },
+  "version_c_overall_by_duration": {
+    "5s": {
+      "final_position_error_m": 11.316,
+      "max_position_error_m": 13.501,
+      "rmse_position_error_m": 9.595,
+      "traveled_distance_m": 57.925,
+      "relative_drift_percent": 16.99,
+      "osm_matching": {
+        "intervals_with_road": 4,
+        "total_intervals": 4,
+        "total_steps": 24,
+        "matched": 24,
+        "rejected_distance": 0,
+        "rejected_heading": 0,
+        "match_fraction": 1.0,
+        "avg_correction_m": 0.449
+      }
+    },
+    "10s": {
+      "final_position_error_m": 19.396,
+      "max_position_error_m": 20.223,
+      "rmse_position_error_m": 13.302,
+      "traveled_distance_m": 103.084,
+      "relative_drift_percent": 17.323,
+      "osm_matching": {
+        "intervals_with_road": 4,
+        "total_intervals": 4,
+        "total_steps": 44,
+        "matched": 44,
+        "rejected_distance": 0,
+        "rejected_heading": 0,
+        "match_fraction": 1.0,
+        "avg_correction_m": 0.635
+      }
+    },
+    "30s": {
+      "final_position_error_m": 44.575,
+      "max_position_error_m": 56.416,
+      "rmse_position_error_m": 32.691,
+      "traveled_distance_m": 256.823,
+      "relative_drift_percent": 17.718,
+      "osm_matching": {
+        "intervals_with_road": 4,
+        "total_intervals": 4,
+        "total_steps": 124,
+        "matched": 124,
+        "rejected_distance": 0,
+        "rejected_heading": 0,
+        "match_fraction": 1.0,
+        "avg_correction_m": 0.73
+      }
+    },
+    "60s": {
+      "final_position_error_m": 134.027,
+      "max_position_error_m": 136.712,
+      "rmse_position_error_m": 72.768,
+      "traveled_distance_m": 463.803,
+      "relative_drift_percent": 28.984,
+      "osm_matching": {
+        "intervals_with_road": 4,
+        "total_intervals": 4,
+        "total_steps": 244,
+        "matched": 244,
+        "rejected_distance": 0,
+        "rejected_heading": 0,
+        "match_fraction": 1.0,
+        "avg_correction_m": 0.824
+      }
+    }
+  },
+  "comparison_summary": {
+    "5s": {
+      "baseline_final_error_m": 37.505,
+      "version_a_final_error_m": 20.04,
+      "version_b_final_error_m": 20.009,
+      "version_c_final_error_m": 11.316,
+      "version_c_drift_percent": 16.99,
+      "improvement_vs_baseline_percent": 69.83,
+      "improvement_vs_version_a_percent": 43.53,
+      "improvement_vs_version_b_percent": 43.45
+    },
+    "10s": {
+      "baseline_final_error_m": 71.666,
+      "version_a_final_error_m": 41.812,
+      "version_b_final_error_m": 41.549,
+      "version_c_final_error_m": 19.396,
+      "version_c_drift_percent": 17.323,
+      "improvement_vs_baseline_percent": 72.94,
+      "improvement_vs_version_a_percent": 53.61,
+      "improvement_vs_version_b_percent": 53.32
+    },
+    "30s": {
+      "baseline_final_error_m": 230.571,
+      "version_a_final_error_m": 158.143,
+      "version_b_final_error_m": 157.73,
+      "version_c_final_error_m": 44.575,
+      "version_c_drift_percent": 17.718,
+      "improvement_vs_baseline_percent": 80.67,
+      "improvement_vs_version_a_percent": 71.81,
+      "improvement_vs_version_b_percent": 71.74
+    },
+    "60s": {
+      "baseline_final_error_m": 575.533,
+      "version_a_final_error_m": 386.714,
+      "version_b_final_error_m": 385.792,
+      "version_c_final_error_m": 134.027,
+      "version_c_drift_percent": 28.984,
+      "improvement_vs_baseline_percent": 76.71,
+      "improvement_vs_version_a_percent": 65.34,
+      "improvement_vs_version_b_percent": 65.26
+    }
+  },
+  "per_session_results": {
+    "S-M": {
+      "5s": {
+        "blackout_intervals": [
+          [
+            2118.0,
+            2123.0
+          ],
+          [
+            4236.0,
+            4241.0
+          ],
+          [
+            6355.0,
+            6360.0
+          ],
+          [
+            8473.0,
+            8478.0
+          ]
+        ],
+        "final_position_error_m": 11.316,
+        "max_position_error_m": 13.501,
+        "rmse_position_error_m": 9.595,
+        "traveled_distance_m": 57.925,
+        "relative_drift_percent": 16.99,
+        "osm_matching": {
+          "intervals_with_road": 4,
+          "total_intervals": 4,
+          "total_steps": 24,
+          "matched": 24,
+          "rejected_distance": 0,
+          "rejected_heading": 0,
+          "match_fraction": 1.0,
+          "avg_correction_m": 0.449
+        }
+      },
+      "10s": {
+        "blackout_intervals": [
+          [
+            2118.0,
+            2128.0
+          ],
+          [
+            4236.0,
+            4246.0
+          ],
+          [
+            6355.0,
+            6365.0
+          ],
+          [
+            8473.0,
+            8483.0
+          ]
+        ],
+        "final_position_error_m": 19.396,
+        "max_position_error_m": 20.223,
+        "rmse_position_error_m": 13.302,
+        "traveled_distance_m": 103.084,
+        "relative_drift_percent": 17.323,
+        "osm_matching": {
+          "intervals_with_road": 4,
+          "total_intervals": 4,
+          "total_steps": 44,
+          "matched": 44,
+          "rejected_distance": 0,
+          "rejected_heading": 0,
+          "match_fraction": 1.0,
+          "avg_correction_m": 0.635
+        }
+      },
+      "30s": {
+        "blackout_intervals": [
+          [
+            2118.0,
+            2148.0
+          ],
+          [
+            4236.0,
+            4266.0
+          ],
+          [
+            6355.0,
+            6385.0
+          ],
+          [
+            8473.0,
+            8503.0
+          ]
+        ],
+        "final_position_error_m": 44.575,
+        "max_position_error_m": 56.416,
+        "rmse_position_error_m": 32.691,
+        "traveled_distance_m": 256.823,
+        "relative_drift_percent": 17.718,
+        "osm_matching": {
+          "intervals_with_road": 4,
+          "total_intervals": 4,
+          "total_steps": 124,
+          "matched": 124,
+          "rejected_distance": 0,
+          "rejected_heading": 0,
+          "match_fraction": 1.0,
+          "avg_correction_m": 0.73
+        }
+      },
+      "60s": {
+        "blackout_intervals": [
+          [
+            2118.0,
+            2178.0
+          ],
+          [
+            4236.0,
+            4296.0
+          ],
+          [
+            6355.0,
+            6415.0
+          ],
+          [
+            8473.0,
+            8533.0
+          ]
+        ],
+        "final_position_error_m": 134.027,
+        "max_position_error_m": 136.712,
+        "rmse_position_error_m": 72.768,
+        "traveled_distance_m": 463.803,
+        "relative_drift_percent": 28.984,
+        "osm_matching": {
+          "intervals_with_road": 4,
+          "total_intervals": 4,
+          "total_steps": 244,
+          "matched": 244,
+          "rejected_distance": 0,
+          "rejected_heading": 0,
+          "match_fraction": 1.0,
+          "avg_correction_m": 0.824
+        }
+      }
+    }
+  }
+}

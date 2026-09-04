@@ -70,7 +70,11 @@ from typing import Dict, List, Optional, Tuple, Union, Any
 
 import numpy as np
 
-from navigate.ai_iekf_pipeline import AIIEKFPipeline, lat_lon_to_enu_m
+from navigate.ai_iekf_pipeline import (
+    AIIEKFPipeline,
+    lat_lon_to_enu_m,
+    enu_to_lat_lon_deg,
+)
 from navigate.iekf_tracker import (
     ErrorStateIEKFTracker,
     GNSSBlackoutSchedule,
@@ -81,6 +85,8 @@ from navigate.iekf_tracker import (
     quat_to_heading_deg,
 )
 from navigate.map_matching import MapMatcher, RoadPolyline, MapMatchResult
+from navigate.osm_map_matcher import match_osm_roads, OSMMatchResult, OSMMapMatcher
+from navigate.osm_road_cache import OSMRoadCache
 from navigate.evaluate_blackout import (
     BlackoutMetrics,
     BlackoutEvaluationResult,
@@ -313,6 +319,8 @@ class AIIEKFRoadPipeline(AIIEKFPipeline):
         lookahead_window_s: float = 120.0,
         min_road_vertices: int = 3,
         apply_road_during_blackout_only: bool = True,
+        use_osm: bool = False,
+        osm_cache: Optional[OSMRoadCache] = None,
     ) -> None:
         super().__init__(
             velocity_checkpoint=velocity_checkpoint,
@@ -328,12 +336,25 @@ class AIIEKFRoadPipeline(AIIEKFPipeline):
         self.lookahead_window_s = float(lookahead_window_s)
         self.min_road_vertices = int(min_road_vertices)
         self.apply_road_during_blackout_only = apply_road_during_blackout_only
+        if osm_cache is not None:
+            self.use_osm = True
+            self.osm_cache = osm_cache
+        else:
+            self.use_osm = bool(use_osm)
+            self.osm_cache = OSMRoadCache() if self.use_osm else None
+
+        self.osm_matcher = OSMMapMatcher(
+            matcher=self.map_matcher,
+            max_match_dist_m=max_match_dist_m,
+            max_heading_diff_deg=max_heading_diff_deg,
+            correction_strength=correction_strength,
+        ) if self.use_osm else None
 
         logger.info(
             f"AIIEKFRoadPipeline initialized: "
             f"max_dist={max_match_dist_m}m, max_hdg={max_heading_diff_deg}deg, "
             f"correction_strength={correction_strength}, road_cov={road_cov_m2}m², "
-            f"lookahead={lookahead_window_s}s"
+            f"lookahead={lookahead_window_s}s, use_osm={self.use_osm}"
         )
 
     # ------------------------------------------------------------------ #
@@ -381,34 +402,40 @@ class AIIEKFRoadPipeline(AIIEKFPipeline):
         speeds_ms = self.predict_velocity(imu_windows)
         quats_rel = self.predict_attitude(imu_windows)
 
-        # 2. Build pre-blackout road caches (leakage-free)
+        # 2. Build pre-blackout road caches (leakage-free, for legacy mode)
         ref_lat = float(gt_lats[0])
         ref_lon = float(gt_lons[0])
         t_0 = float(timestamps[0])
 
         road_caches: Dict[int, Optional[RoadPolyline]] = {}  # interval_idx -> road
-        for iv_idx, (bo_start, bo_end) in enumerate(blackout_intervals):
-            road = build_pre_blackout_road(
-                gt_lats=gt_lats,
-                gt_lons=gt_lons,
-                timestamps=timestamps,
-                blackout_start_s=bo_start,
-                ref_lat=ref_lat,
-                ref_lon=ref_lon,
-                lookahead_window_s=self.lookahead_window_s,
-                min_vertices=self.min_road_vertices,
-            )
-            road_caches[iv_idx] = road
-            if road is not None:
-                logger.info(
-                    f"  [RoadCache] Interval {iv_idx} (t=[{bo_start:.1f},{bo_end:.1f}]): "
-                    f"cached {len(road.vertices)} vertices."
+        if not self.use_osm:
+            for iv_idx, (bo_start, bo_end) in enumerate(blackout_intervals):
+                road = build_pre_blackout_road(
+                    gt_lats=gt_lats,
+                    gt_lons=gt_lons,
+                    timestamps=timestamps,
+                    blackout_start_s=bo_start,
+                    ref_lat=ref_lat,
+                    ref_lon=ref_lon,
+                    lookahead_window_s=self.lookahead_window_s,
+                    min_vertices=self.min_road_vertices,
                 )
-            else:
-                logger.warning(
-                    f"  [RoadCache] Interval {iv_idx} (t=[{bo_start:.1f},{bo_end:.1f}]): "
-                    f"no road available (insufficient pre-blackout data)."
-                )
+                road_caches[iv_idx] = road
+                if road is not None:
+                    logger.info(
+                        f"  [RoadCache] Interval {iv_idx} (t=[{bo_start:.1f},{bo_end:.1f}]): "
+                        f"cached {len(road.vertices)} vertices."
+                    )
+                else:
+                    logger.warning(
+                        f"  [RoadCache] Interval {iv_idx} (t=[{bo_start:.1f},{bo_end:.1f}]): "
+                        f"no road available (insufficient pre-blackout data)."
+                    )
+        else:
+            logger.info("  [OSM] Using live/in-memory OSMRoadCache for road constraints.")
+
+        if self.osm_matcher is not None:
+            self.osm_matcher.reset()
 
         # 3. Blackout schedule
         schedule = GNSSBlackoutSchedule(intervals=blackout_intervals)
@@ -433,24 +460,24 @@ class AIIEKFRoadPipeline(AIIEKFPipeline):
         # 5. Per-blackout road match statistics accumulators
         stats_accum: List[Dict[str, Any]] = []
         for iv_idx, (bo_start, bo_end) in enumerate(blackout_intervals):
-            road = road_caches[iv_idx]
+            road = road_caches.get(iv_idx)
             stats_accum.append({
                 "bo_start": bo_start,
                 "bo_end": bo_end,
-                "road_active": road is not None,
+                "road_active": False if self.use_osm else (road is not None),
                 "n_steps": 0,
                 "n_matched": 0,
                 "n_rejected_distance": 0,
                 "n_rejected_heading": 0,
                 "corrections_m": [],
-                "road_vertices": len(road.vertices) if road is not None else 0,
+                "road_vertices": 0 if self.use_osm else (len(road.vertices) if road is not None else 0),
             })
 
         def _get_active_road(t: float) -> Tuple[Optional[RoadPolyline], int]:
             """Returns (road, interval_index) for the blackout containing t, or (None, -1)."""
             for iv_idx, (bo_start, bo_end) in enumerate(blackout_intervals):
                 if bo_start <= t <= bo_end:
-                    return road_caches[iv_idx], iv_idx
+                    return road_caches.get(iv_idx), iv_idx
             return None, -1
 
         # 6. Main loop (identical structure to Version A, + road correction step)
@@ -518,49 +545,118 @@ class AIIEKFRoadPipeline(AIIEKFPipeline):
             #    so this only has effect when blackout is active.
             should_apply_road = is_bo if self.apply_road_during_blackout_only else True
             if should_apply_road:
-                road, iv_idx = _get_active_road(t_curr)
+                # Find active blackout interval index
+                iv_idx = -1
+                for idx, (bo_start, bo_end) in enumerate(blackout_intervals):
+                    if bo_start <= t_curr <= bo_end:
+                        iv_idx = idx
+                        break
+
                 if iv_idx >= 0:
                     sa = stats_accum[iv_idx]
                     sa["n_steps"] += 1
 
-                    if road is not None:
-                        state = tracker.get_state()
-                        pos_en = state["pos_enu"][:2]  # [East, North]
-                        heading_deg = quat_to_heading_deg(state["quat"])
+                    state = tracker.get_state()
+                    pos_en = state["pos_enu"][:2]  # [East, North] in metres
+                    heading_deg = quat_to_heading_deg(state["quat"])
 
-                        match: MapMatchResult = self.map_matcher.match(
-                            estimated_pos=pos_en,
-                            estimated_heading_deg=heading_deg,
-                            road=road,
+                    if self.use_osm and self.osm_cache is not None:
+                        # Derive current WGS84 lookup coordinates from filter estimate
+                        est_lat, est_lon = enu_to_lat_lon_deg(
+                            east_m=pos_en[0],
+                            north_m=pos_en[1],
+                            ref_lat_deg=ref_lat,
+                            ref_lon_deg=ref_lon,
                         )
 
-                        if match.matched:
+                        # Query in-memory OSM cache for nearby road ways
+                        osm_ways = self.osm_cache.get_roads(lat=est_lat, lon=est_lon)
+                        if osm_ways:
+                            sa["road_active"] = True
+                            for way in osm_ways:
+                                if hasattr(way, "coordinates") and way.coordinates:
+                                    sa["road_vertices"] = max(
+                                        sa["road_vertices"], len(way.coordinates)
+                                    )
+
+                        # Match against candidate OSM roads with temporal continuity
+                        matcher_obj = self.osm_matcher if self.osm_matcher is not None else OSMMapMatcher(matcher=self.map_matcher)
+                        osm_match: OSMMatchResult = matcher_obj.match(
+                            estimated_pos=pos_en,
+                            estimated_heading_deg=heading_deg,
+                            osm_roads=osm_ways,
+                            ref_lat=ref_lat,
+                            ref_lon=ref_lon,
+                        )
+
+                        if osm_match.matched:
                             sa["n_matched"] += 1
                             correction_dist = float(
-                                np.linalg.norm(match.corrected_pos - pos_en)
+                                np.linalg.norm(osm_match.corrected_pos - pos_en)
                             )
                             sa["corrections_m"].append(correction_dist)
+                            if osm_match.selected_road is not None:
+                                sa["road_vertices"] = max(
+                                    sa["road_vertices"], len(osm_match.selected_road.vertices)
+                                )
 
                             # Inject road correction as EKF position pseudo-measurement
-                            # corrected_pos is a 2D [E, N] point; append Up=0
                             road_pos_enu = np.array([
-                                match.corrected_pos[0],
-                                match.corrected_pos[1],
+                                osm_match.corrected_pos[0],
+                                osm_match.corrected_pos[1],
                                 state["pos_enu"][2],  # keep current Up
                             ], dtype=np.float64)
                             tracker.update_gnss_position(
                                 pos_enu_meas=road_pos_enu,
                                 cov_pos=self.road_cov_m2,
-                                is_blackout=False,  # force update (not real GNSS)
+                                is_blackout=False,  # force pseudo-measurement update
                             )
                         else:
-                            # Count rejection category
-                            reason = match.rejection_reason.lower()
-                            if "distance" in reason:
-                                sa["n_rejected_distance"] += 1
-                            elif "heading" in reason:
+                            if osm_match.rejected_heading_count > 0:
                                 sa["n_rejected_heading"] += 1
-                            # else: "no road" — counted elsewhere
+                            elif osm_match.rejected_distance_count > 0:
+                                sa["n_rejected_distance"] += 1
+                            else:
+                                reason = osm_match.rejection_reason.lower()
+                                if "heading" in reason:
+                                    sa["n_rejected_heading"] += 1
+                                elif "distance" in reason:
+                                    sa["n_rejected_distance"] += 1
+
+                    else:
+                        # Legacy fallback: pre-blackout GNSS polyline
+                        road = road_caches.get(iv_idx)
+                        if road is not None:
+                            match: MapMatchResult = self.map_matcher.match(
+                                estimated_pos=pos_en,
+                                estimated_heading_deg=heading_deg,
+                                road=road,
+                            )
+
+                            if match.matched:
+                                sa["n_matched"] += 1
+                                correction_dist = float(
+                                    np.linalg.norm(match.corrected_pos - pos_en)
+                                )
+                                sa["corrections_m"].append(correction_dist)
+
+                                # Inject road correction as EKF position pseudo-measurement
+                                road_pos_enu = np.array([
+                                    match.corrected_pos[0],
+                                    match.corrected_pos[1],
+                                    state["pos_enu"][2],  # keep current Up
+                                ], dtype=np.float64)
+                                tracker.update_gnss_position(
+                                    pos_enu_meas=road_pos_enu,
+                                    cov_pos=self.road_cov_m2,
+                                    is_blackout=False,
+                                )
+                            else:
+                                reason = match.rejection_reason.lower()
+                                if "distance" in reason:
+                                    sa["n_rejected_distance"] += 1
+                                elif "heading" in reason:
+                                    sa["n_rejected_heading"] += 1
 
             # Record trajectory point
             tracker._record_trajectory_point(t_curr, is_blackout=is_bo)

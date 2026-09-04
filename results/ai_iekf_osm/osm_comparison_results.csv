@@ -1,0 +1,5 @@
+Duration,Session,Metric,Baseline,Version_A,Version_B,Version_C,VC_vs_VA_pct,VC_vs_VB_pct
+5s,OVERALL,final_position_error_m,37.505,20.04,20.009,11.316,43.53,43.45
+10s,OVERALL,final_position_error_m,71.666,41.812,41.549,19.396,53.61,53.32
+30s,OVERALL,final_position_error_m,230.571,158.143,157.73,44.575,71.81,71.74
+60s,OVERALL,final_position_error_m,575.533,386.714,385.792,134.027,65.34,65.26
